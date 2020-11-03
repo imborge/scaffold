@@ -2,13 +2,12 @@
 
 A CRUD scaffolding library intended to be used with [Luminus](https://luminusweb.com/).
 
-## Rationale
-
-Writing the same CRUD-code again and again is a waste of time.
-
 ## TODO
 
 - [ ] Generate migrations to create table(s)
+  - [x] Column constraints
+  - [ ] Table constraints
+  - [ ] Data types
 - [ ] Generate CRUD queries
 - [ ] Generate CRUD request handlers
 - [ ] Generate re-frame events and subscriptions
