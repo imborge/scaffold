@@ -1,4 +1,4 @@
-# scaffolding
+# scaffold
 
 A CRUD scaffolding library intended to be used with [Luminus](https://luminusweb.com/).
 
