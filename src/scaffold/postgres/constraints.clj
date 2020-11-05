@@ -4,7 +4,7 @@
 (defn has-name? [constraint]
   (string? (first constraint)))
 
-(defn generate-unique-constraint [constraint]
+(defn generate-unique-constraint [_]
   (str "UNIQUE"))
 
 (defn generate-check-constraint [[constraint]]
@@ -28,11 +28,11 @@
     (str (when constraint-name
            (str "CONSTRAINT " constraint-name " "))
          (condp = constraint-type
-           :unique (generate-unique-constraint rest)
-           :check  (generate-check-constraint rest)
-           :default (generate-default-constraint rest)
+           :unique      (generate-unique-constraint rest)
+           :check       (generate-check-constraint rest)
+           :default     (generate-default-constraint rest)
            :primary-key (generate-primary-key-constraint rest)
-           :references (generate-references-constraint rest)))))
+           :references  (generate-references-constraint rest)))))
 
 (defn generate-column-constraint [constraint]
   (if (vector? constraint)
