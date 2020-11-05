@@ -1,5 +1,7 @@
 # scaffold
 
+[![scaffold](https://circleci.com/gh/imborge/scaffold.svg?style=svg)](https://circleci.com/gh/imborge/scaffold)
+
 A CRUD scaffolding library intended to be used with [Luminus](https://luminusweb.com/).
 
 ## TODO
