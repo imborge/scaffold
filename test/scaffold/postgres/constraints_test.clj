@@ -4,13 +4,13 @@
 
 (deftest simple-column-constraints
   (testing "NOT NULL"
-    (is (= "NOT NULL" (sut/generate-column-constraint :not-null))))
+    (is (= "NOT NULL" (sut/generate-column-constraint [:not-null]))))
   (testing "NULL"
-    (is (= "NULL" (sut/generate-column-constraint :null))))
+    (is (= "NULL" (sut/generate-column-constraint [:null]))))
   (testing "PRIMARY KEY"
-    (is (= "PRIMARY KEY" (sut/generate-column-constraint :primary-key))))
+    (is (= "PRIMARY KEY" (sut/generate-column-constraint [:primary-key]))))
   (testing "UNIQUE"
-    (is (= "UNIQUE" (sut/generate-column-constraint :unique)))))
+    (is (= "UNIQUE" (sut/generate-column-constraint [:unique])))))
 
 (deftest advanced-column-constraints
   (testing "can create constraint with a name"
@@ -27,7 +27,7 @@
            (sut/generate-column-constraint [:primary-key]))))
   (testing "can create references constraint"
     (is (= "REFERENCES users(id)"
-           (sut/generate-column-constraint [:references "users(id)"])))))
+           (sut/generate-column-constraint [:references "users" "id"])))))
 
 (deftest multi-constraints
   (testing "no constraints"
@@ -35,4 +35,4 @@
            (sut/generate-column-constraints []))))
   (testing "can create multiple constraints"
     (is (= "NOT NULL REFERENCES users(id)"
-           (sut/generate-column-constraints [:not-null [:references "users(id)"]])))))
+           (sut/generate-column-constraints [[:not-null] [:references "users" "id"]])))))

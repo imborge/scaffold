@@ -1,47 +1,57 @@
 (ns scaffold.postgres.constraints
-  (:require [clojure.string :as str]))
+  (:require [clojure.string :as str]
+            [clojure.spec.alpha :as s]))
 
-(defn has-name? [constraint]
+(defn has-name?
+  "The constraint has a name is the first element is a string"
+  [constraint]
   (string? (first constraint)))
 
-(defn generate-unique-constraint [_]
-  (str "UNIQUE"))
+(defn generate-check [[expr]]
+  {:pre [(s/valid? string? expr)]}
+  (str "CHECK (" expr ")"))
 
-(defn generate-check-constraint [[constraint]]
-  (str "CHECK (" constraint ")"))
+(defn generate-default [[expr]]
+  {:pre [(s/valid? string? expr)]}
+  (str "DEFAULT " expr))
 
-(defn generate-default-constraint [[constraint]]
-  (str "DEFAULT " constraint))
+(s/def ::on-delete #{:restrict :cascade :noop :null :default})
+(s/def ::references (s/cat :table string? :column string? :on-delete (s/? ::on-delete)))
 
-(defn generate-primary-key-constraint [[constraint]]
-  (str "PRIMARY KEY"))
+(def on-delete->str
+  {:restrict "RESTRICT"
+   :cascade  "CASCADE"
+   :noop     "NO ACTION"
+   :null     "SET NULL"
+   :default  "SET DEFAULT"})
 
-(defn generate-references-constraint [[constraint]]
-  (str "REFERENCES " constraint))
+(defn generate-references [[table column on-delete :as params]]
+  {:pre [(s/valid? ::references (vec params))]}
+  (str "REFERENCES " table "(" column ")"
+       (when on-delete
+         (str " " (on-delete->str on-delete)))))
 
-(defn generate-column-vector-constraint [constraint]
-  (let [constraint-name          (when (has-name? constraint)
-                                   (first constraint))
-        [constraint-type & rest] (if (has-name? constraint)
-                                   (rest constraint)
-                                   constraint)]
-    (str (when constraint-name
-           (str "CONSTRAINT " constraint-name " "))
-         (condp = constraint-type
-           :unique      (generate-unique-constraint rest)
-           :check       (generate-check-constraint rest)
-           :default     (generate-default-constraint rest)
-           :primary-key (generate-primary-key-constraint rest)
-           :references  (generate-references-constraint rest)))))
+(def column-constraint->generator
+  {:not-null    (constantly "NOT NULL")
+   :null        (constantly "NULL")
+   :unique      (constantly "UNIQUE")
+   :check       generate-check
+   :default     generate-default
+   :primary-key (constantly "PRIMARY KEY")
+   :references  generate-references})
 
-(defn generate-column-constraint [constraint]
-  (if (vector? constraint)
-    (generate-column-vector-constraint constraint)
-    (condp = constraint
-      :not-null    "NOT NULL"
-      :null        "NULL"
-      :unique      "UNIQUE"
-      :primary-key "PRIMARY KEY")))
+(defn generate-column-constraint
+  ([constraint]
+   (generate-column-constraint constraint column-constraint->generator))
+  ([constraint column-constraint->generator-map]
+   (let [constraint-name       (when (has-name? constraint)
+                                 (first constraint))
+         [constraint & params] (if constraint-name
+                                 (rest constraint)
+                                 constraint)
+         generator-fn          (column-constraint->generator-map constraint)]
+     (str (when constraint-name (str "CONSTRAINT " constraint-name " "))
+          (generator-fn params)))))
 
 (defn generate-column-constraints [constraints]
   (str/join " " (map generate-column-constraint constraints)))
