@@ -29,7 +29,7 @@
   {:pre [(s/valid? ::references (vec params))]}
   (str "REFERENCES " table "(" column ")"
        (when on-delete
-         (str " " (on-delete->str on-delete)))))
+         (str " ON DELETE " (on-delete->str on-delete)))))
 
 (def column-constraint->generator
   {:not-null    (constantly "NOT NULL")

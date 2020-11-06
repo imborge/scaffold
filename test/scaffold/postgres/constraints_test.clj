@@ -27,7 +27,22 @@
            (sut/generate-column-constraint [:primary-key]))))
   (testing "can create references constraint"
     (is (= "REFERENCES users(id)"
-           (sut/generate-column-constraint [:references "users" "id"])))))
+           (sut/generate-column-constraint [:references "users" "id"]))))
+  (testing "can create references constraint with cascade"
+    (is (= "REFERENCES users(id) ON DELETE CASCADE"
+           (sut/generate-column-constraint [:references "users" "id" :cascade]))))
+  (testing "can create references constraint with restrict"
+    (is (= "REFERENCES users(id) ON DELETE RESTRICT"
+           (sut/generate-column-constraint [:references "users" "id" :restrict]))))
+  (testing "can create references constraint with no action"
+    (is (= "REFERENCES users(id) ON DELETE NO ACTION"
+           (sut/generate-column-constraint [:references "users" "id" :noop]))))
+  (testing "can create references constraint with set null"
+    (is (= "REFERENCES users(id) ON DELETE SET NULL"
+           (sut/generate-column-constraint [:references "users" "id" :null]))))
+  (testing "can create references constraint with set default"
+    (is (= "REFERENCES users(id) ON DELETE SET DEFAULT"
+           (sut/generate-column-constraint [:references "users" "id" :default])))))
 
 (deftest multi-constraints
   (testing "no constraints"
