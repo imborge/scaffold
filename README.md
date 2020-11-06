@@ -8,7 +8,7 @@ A CRUD scaffolding library intended to be used with [Luminus](https://luminusweb
 
 - [ ] Generate migrations to create table(s)
   - [x] Column constraints
-  - [ ] Table constraints
+  - [x] Table constraints
   - [x] Data types
 - [ ] Generate CRUD queries
 - [ ] Generate CRUD request handlers
