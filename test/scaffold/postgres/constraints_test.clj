@@ -1,6 +1,7 @@
 (ns scaffold.postgres.constraints-test
   (:require [scaffold.postgres.constraints :as sut]
-            [clojure.test :refer :all]))
+            [clojure.test :refer :all]
+            [clojure.string :as str]))
 
 (deftest simple-column-constraints
   (testing "NOT NULL"
@@ -27,22 +28,23 @@
            (sut/generate-column-constraint [:primary-key]))))
   (testing "can create references constraint"
     (is (= "REFERENCES users(id)"
-           (sut/generate-column-constraint [:references "users" "id"]))))
-  (testing "can create references constraint with cascade"
-    (is (= "REFERENCES users(id) ON DELETE CASCADE"
-           (sut/generate-column-constraint [:references "users" "id" :cascade]))))
-  (testing "can create references constraint with restrict"
-    (is (= "REFERENCES users(id) ON DELETE RESTRICT"
-           (sut/generate-column-constraint [:references "users" "id" :restrict]))))
-  (testing "can create references constraint with no action"
-    (is (= "REFERENCES users(id) ON DELETE NO ACTION"
-           (sut/generate-column-constraint [:references "users" "id" :noop]))))
-  (testing "can create references constraint with set null"
-    (is (= "REFERENCES users(id) ON DELETE SET NULL"
-           (sut/generate-column-constraint [:references "users" "id" :null]))))
-  (testing "can create references constraint with set default"
-    (is (= "REFERENCES users(id) ON DELETE SET DEFAULT"
-           (sut/generate-column-constraint [:references "users" "id" :default])))))
+           (sut/generate-column-constraint [:foreign-key "users" "id"]))))
+  (testing "can create references constraint with on delete"
+    (doseq [action sut/referential-action]
+      (is (= (str "REFERENCES users(id) ON DELETE " (sut/referential-action->str action))
+             (sut/generate-column-constraint [:foreign-key "users" "id" action])))))
+  (testing "can create references constraint with on update"
+    (doseq [action sut/referential-action]
+      (is (= (str "REFERENCES users(id) ON UPDATE " (sut/referential-action->str action))
+             (sut/generate-column-constraint [:foreign-key "users" "id" nil action])))))
+  (testing "can create references constraint with on delete and on update"
+    (doseq [delete-action sut/referential-action
+            update-action sut/referential-action]
+      (is (= (str "REFERENCES users(id) ON DELETE "
+                  (sut/referential-action->str delete-action)
+                  " ON UPDATE " (sut/referential-action->str update-action))
+             (sut/generate-column-constraint [:foreign-key "users" "id" delete-action update-action]))))))
+
 
 (deftest multi-constraints
   (testing "no constraints"
@@ -50,4 +52,40 @@
            (sut/generate-column-constraints []))))
   (testing "can create multiple constraints"
     (is (= "NOT NULL REFERENCES users(id)"
-           (sut/generate-column-constraints [[:not-null] [:references "users" "id"]])))))
+           (sut/generate-column-constraints [[:not-null] [:foreign-key "users" "id"]])))))
+
+(deftest table-constraints
+  (testing "can generate CHECK constraint"
+    (is (= "CHECK (1 = 1)"
+           (sut/generate-table-constraint [:check "1 = 1"]))))
+  (testing "can generate UNIQUE constraint"
+    (is (= "UNIQUE (id)"
+           (sut/generate-table-constraint [:unique "id"])))
+    (is (= "UNIQUE (from, to)"
+           (sut/generate-table-constraint [:unique "from" "to"]))))
+  (testing "can generate PRIMARY KEY constraint"
+    (is (= "PRIMARY KEY (id)"
+           (sut/generate-table-constraint [:primary-key "id"])))
+    (is (= "PRIMARY KEY (name, number)"
+           (sut/generate-table-constraint [:primary-key "name" "number"]))))
+  (testing "can generate FOREIGN KEY constraint"
+    (is (= "FOREIGN KEY (author_id) REFERENCES authors (id)"
+           (sut/generate-table-constraint [:foreign-key "authors" [["author_id" "id"]]])))
+    (is (= "FOREIGN KEY (author_id, something) REFERENCES authors (id, something)"
+           (sut/generate-table-constraint [:foreign-key "authors" [["author_id" "id"] ["something" "something"]]]))))
+  (testing "can generate FOREIGN KEY constraint with ON DELETE"
+    (doseq [action sut/referential-action]
+      (is (= (str "FOREIGN KEY (author_id) REFERENCES authors (id) ON DELETE " (sut/referential-action->str action))
+             (sut/generate-table-constraint [:foreign-key "authors" [["author_id" "id"]] action])))))
+  (testing "can generate FOREIGN KEY constraint with ON UPDATE"
+    (doseq [action sut/referential-action]
+      (is (= (str "FOREIGN KEY (author_id) REFERENCES authors (id) ON UPDATE " (sut/referential-action->str action))
+             (sut/generate-table-constraint [:foreign-key "authors" [["author_id" "id"]] nil action])))))
+  (testing "can generate FOREIGN KEY constraint with ON DELETE and ON UPDATE"
+    (doseq [delete-action sut/referential-action
+            update-action sut/referential-action]
+      (is (= (str "FOREIGN KEY (author_id) REFERENCES authors (id) ON DELETE "
+                  (sut/referential-action->str delete-action)
+                  " ON UPDATE "
+                  (sut/referential-action->str update-action))
+             (sut/generate-table-constraint [:foreign-key "authors" [["author_id" "id"]] delete-action update-action]))))))
