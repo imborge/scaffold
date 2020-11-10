@@ -6,6 +6,9 @@
 (defn prepare-hugsql-val [column-spec]
   (update column-spec 0 #(str ":" %)))
 
+(defn prepare-jdbc-val [column-spec]
+  (update column-spec 0 (constantly "?")))
+
 (defn append-column-cast [[_ [column-type] :as column-spec]]
   (let [append-str (condp = column-type
                       :uuid "::UUID"
