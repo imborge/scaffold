@@ -10,7 +10,7 @@ A CRUD scaffolding library intended to be used with [Luminus](https://luminusweb
   - [x] Column constraints
   - [x] Table constraints
   - [x] Data types
-- [ ] Generate CRUD queries
+- [x] Generate basic CRUD queries
 - [ ] Generate CRUD request handlers
 - [ ] Generate re-frame events and subscriptions
 
