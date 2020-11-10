@@ -6,7 +6,7 @@ A CRUD scaffolding library intended to be used with [Luminus](https://luminusweb
 
 ## TODO
 
-- [ ] Generate migrations to create table(s)
+- [x] Generate migrations to create table(s)
   - [x] Column constraints
   - [x] Table constraints
   - [x] Data types
