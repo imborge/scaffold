@@ -7,6 +7,12 @@
   [constraint]
   (string? (first constraint)))
 
+(defn primary-key?
+  "Checks if a constraint spec is a :primary-key"
+  [constraint-spec]
+  (or (= :primary-key (first constraint-spec))
+      (= :primary-key (second constraint-spec))))
+
 (defn generate-check [[expr]]
   {:pre [(s/valid? string? expr)]}
   (str "CHECK (" expr ")"))

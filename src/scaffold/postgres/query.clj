@@ -36,22 +36,16 @@
 (defn generate-update-fields [column-specs prepare-column-value-fn]
   (mapv #(generate-update-field % prepare-column-value-fn) column-specs))
 
-(defn primary-key-constraint?
-  "Checks if a constraint spec is a :primary-key"
-  [constraint-spec]
-  (or (= :primary-key (first constraint-spec))
-      (= :primary-key (second constraint-spec))))
-
 (defn find-primary-key-table-constraint
   "Finds the constraint in the table-spec :constraints which is a :primary-key"
   [table-spec]
-  (first (filter primary-key-constraint? (:constraints table-spec))))
+  (first (filter constraints/primary-key? (:constraints table-spec))))
 
 (defn column-contains-primary-key?
   "Checks if the column in the column-spec has a :primary-key constraint"
   [[_ _ constraints
     :as column-spec]]
-  (seq (filter primary-key-constraint? constraints)))
+  (seq (filter constraints/primary-key? constraints)))
 
 (defn column-spec? [table-constraint-or-column]
   ;; A column is a vector where the first item is the column-name
