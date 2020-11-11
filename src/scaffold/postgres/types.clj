@@ -74,6 +74,7 @@
    :varchar       generate-varchar
    :cidr          (constantly "CIDER")
    :circle        (constantly "CIRCLE")
+   :citext        (constantly "CITEXT")
    :date          (constantly "DATE")
    :double        (constantly "DOUBLE PRECISION")
    :inet          (constantly "INET")
