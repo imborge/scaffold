@@ -24,7 +24,7 @@
                         columns :columns}
                        prepare-column-value-fn]
   (str "INSERT INTO " table-name
-       " (" (str/join (map first columns)) ")\n"
+       " (" (str/join ", " (map first columns)) ")\n"
        "VALUES (" (str/join ", " (map (comp first prepare-column-value-fn) columns)) ")"))
 
 (defn generate-select [{table-name :name
