@@ -11,13 +11,13 @@
 
 (defn append-column-cast [[_ [column-type] :as column-spec]]
   (let [append-str (condp = column-type
-                      :uuid "::UUID"
-                      :inet "::INET"
-                      :time "::TIME"
-                      :timetz "::TIMETZ"
-                      :timestamp "::TIMESTAMP"
-                      :timestamptz "::TIMESTAMPTZ"
-                      nil)]
+                     :uuid        "::UUID"
+                     :inet        "::INET"
+                     :time        "::TIME"
+                     :timetz      "::TIMETZ"
+                     :timestamp   "::TIMESTAMP"
+                     :timestamptz "::TIMESTAMPTZ"
+                     nil)]
     (update column-spec 0 #(str % append-str))))
 
 (defn generate-insert [{table-name :name
