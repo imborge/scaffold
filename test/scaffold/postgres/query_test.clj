@@ -37,3 +37,17 @@
            (sut/delete {:name             "users"
                         :columns [["id" [:uuid] [[:primary-key]]]]}
                        (comp sut/hugsql-var sut/append-column-cast))))))
+
+(deftest hugsql
+  (testing "can create insert signature"
+    (is (= "-- :name create-user! :! :n\n"
+           (sut/hugsql-signature :insert "users" {:depluralize? true}))))
+  (testing "can create select signature"
+    (is (= "-- :name get-users :? :*\n"
+           (sut/hugsql-signature :select "users" {:depluralize? true}))))
+  (testing "can create update signature"
+    (is (= "-- :name update-user! :! :n\n"
+           (sut/hugsql-signature :update "users" {:depluralize? true}))))
+  (testing "can create delete signature"
+    (is (= "-- :name delete-user! :! :n\n"
+           (sut/hugsql-signature :delete "users" {:depluralize? true})))))

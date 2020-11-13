@@ -1,11 +1,26 @@
 (ns scaffold.postgres.query
   (:require [clojure.string :as str]
             [clojure.spec.alpha :as s]
+            [inflections.core :as inflections]
             [scaffold.postgres.constraints :as constraints])
   (:refer-clojure :exclude [update] ))
 
 (defn hugsql-var [column-spec]
   (clojure.core/update column-spec 0 #(str ":" %)))
+
+(defn hugsql-signature
+  ([action column-name]
+   (hugsql-signature action column-name {}))
+  ([action column-name {:keys [depluralize?]
+                        :or   {depluralize? false}
+                        :as   opts}]
+   {:pre [(s/valid? #{:insert :select :delete :update} action)]}
+   (let [signature (condp = action
+                     :insert (str "create-" (if depluralize? (inflections/singular column-name) column-name) "! :! :n")
+                     :select (str "get-" column-name " :? :*")
+                     :delete (str "delete-" (if depluralize? (inflections/singular column-name) column-name) "! :! :n")
+                     :update (str "update-" (if depluralize? (inflections/singular column-name) column-name) "! :! :n"))]
+     (str "-- :name " signature "\n" ))))
 
 (defn jdbc-val [column-spec]
   (clojure.core/update column-spec 0 (constantly "?")))
