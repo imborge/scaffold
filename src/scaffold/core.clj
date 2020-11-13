@@ -9,20 +9,26 @@
   ([table-spec filename]
    (spit filename (pg/table-sql table-spec))))
 
-(defn generate-queries
+(defn generate-hugsql-queries
   ([table-spec]
-   (generate-migration table-spec (str (:name table-spec) "-queries.sql")))
-  ([table-spec filename]
+   (generate-migration table-spec {}))
+  ([table-spec {:keys [filename]
+                :or   {filename (str "add-" (:name table-spec) "-table.up")}
+                :as   opts}]
    (let [insert-sql
-         (q/insert table-spec (comp q/append-column-cast q/hugsql-var))
-
+         (str (q/hugsql-signature :insert (:name table-spec) {:depluralize? true})
+              (q/insert table-spec (comp q/append-column-cast q/hugsql-var)))
+         
          select-sql
-         (q/select table-spec)
+         (str (q/hugsql-signature :select (:name table-spec) {:depluralize? true})
+              (q/select table-spec))
 
          update-sql
-         (q/update table-spec (comp q/append-column-cast q/hugsql-var))
+         (str (q/hugsql-signature :update (:name table-spec) {:depluralize? true})
+              (q/update table-spec (comp q/append-column-cast q/hugsql-var)))
 
          delete-sql
-         (q/delete table-spec (comp q/append-column-cast q/hugsql-var))]
+         (str (q/hugsql-signature :delete (:name table-spec) {:depluralize? true})
+              (q/delete table-spec (comp q/append-column-cast q/hugsql-var)))]
      (spit filename (str/join "\n\n" [insert-sql select-sql update-sql delete-sql])))))
 
