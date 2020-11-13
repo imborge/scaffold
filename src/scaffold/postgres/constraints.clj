@@ -13,11 +13,11 @@
   (or (= :primary-key (first constraint-spec))
       (= :primary-key (second constraint-spec))))
 
-(defn generate-check [[expr]]
+(defn check [[expr]]
   {:pre [(s/valid? string? expr)]}
   (str "CHECK (" expr ")"))
 
-(defn generate-default [[expr]]
+(defn default [[expr]]
   {:pre [(s/valid? string? expr)]}
   (str "DEFAULT " expr))
 
@@ -39,7 +39,7 @@
    :null     "SET NULL"
    :default  "SET DEFAULT"})
 
-(defn generate-references [[table column on-delete on-update :as params]]
+(defn references [[table column on-delete on-update :as params]]
   {:pre [(s/valid? ::references (vec params))]}
   (str "REFERENCES " table "(" column ")"
        (when on-delete
@@ -51,12 +51,12 @@
   {:not-null    (constantly "NOT NULL")
    :null        (constantly "NULL")
    :unique      (constantly "UNIQUE")
-   :check       generate-check
-   :default     generate-default
+   :check       check
+   :default     default
    :primary-key (constantly "PRIMARY KEY")
-   :foreign-key  generate-references})
+   :foreign-key  references})
 
-(defn generate-constraint
+(defn constraint
   ([constraint-vec constraint->generator-map]
    (let [constraint-name       (when (has-name? constraint-vec)
                                  (first constraint-vec))
@@ -67,18 +67,18 @@
      (str (when constraint-name (str "CONSTRAINT " constraint-name " "))
           (generator-fn params)))))
 
-(defn generate-column-constraint [constraint-vec]
-  (generate-constraint constraint-vec column-constraint->generator))
+(defn column-constraint [constraint-vec]
+  (constraint constraint-vec column-constraint->generator))
 
-(defn generate-column-constraints [constraints]
-  (str/join " " (map generate-column-constraint constraints)))
+(defn column-constraints [constraints]
+  (str/join " " (map column-constraint constraints)))
 
-(defn generate-table-unique [columns]
+(defn table-unique [columns]
   (str "UNIQUE ("
        (str/join ", " columns)
        ")"))
 
-(defn generate-table-primary-key [columns]
+(defn table-primary-key [columns]
   (str "PRIMARY KEY ("
        (str/join ", " columns)
        ")"))
@@ -90,7 +90,7 @@
    :on-delete (s/? (s/nilable ::referential-action))
    :on-update (s/? (s/nilable ::referential-action))))
 
-(defn generate-table-foreign-key [params]
+(defn table-foreign-key [params]
   {:pre [(s/valid? ::table-foreign-key params)]}
   (let [parsed-params (s/conform ::table-foreign-key params)]
     (str "FOREIGN KEY (" (str/join ", " (map first (:col-pairs parsed-params))) ") "
@@ -101,10 +101,10 @@
            (str " ON UPDATE " (referential-action->str on-update))))))
 
 (def table-constraint->generator
-  {:check       generate-check
-   :unique      generate-table-unique
-   :primary-key generate-table-primary-key
-   :foreign-key generate-table-foreign-key})
+  {:check       check
+   :unique      table-unique
+   :primary-key table-primary-key
+   :foreign-key table-foreign-key})
 
-(defn generate-table-constraint [constraint-vec]
-  (generate-constraint constraint-vec table-constraint->generator))
+(defn table-constraint [constraint-vec]
+  (constraint constraint-vec table-constraint->generator))
