@@ -13,7 +13,21 @@
   (testing "can create select query"
     (is (= "SELECT id FROM users"
            (sut/select {:name "users"
-                                 :columns [["id" [:uuid]]]})))))
+                        :columns [["id" [:uuid]]]})))))
+
+(deftest select-by-pk-queries
+  (testing "can create select-by-{pk} query"
+    (is (= "SELECT id FROM users WHERE id = :id::UUID"
+           (sut/select-by-pk {:name    "users"
+                              :columns [["id" [:uuid] [[:primary-key]]]]}
+                             (comp sut/hugsql-var sut/append-column-cast)))))
+  (testing "can create select-by-{pk} with composite primary key"
+    (is (= "SELECT id, username FROM users WHERE id = :id::UUID AND username = :username"
+           (sut/select-by-pk {:name    "users"
+                              :columns [["id" [:uuid]]
+                                        ["username" [:text]]]
+                              :constraints [[:primary-key "id" "username"]]}
+                             (comp sut/hugsql-var sut/append-column-cast))))))
 
 (deftest update-queries
   (testing "can create update query"
@@ -39,15 +53,31 @@
                        (comp sut/hugsql-var sut/append-column-cast))))))
 
 (deftest hugsql
-  (testing "can create insert signature"
-    (is (= "-- :name create-user! :! :n\n"
-           (sut/hugsql-signature :insert "users" {:depluralize? true}))))
-  (testing "can create select signature"
-    (is (= "-- :name get-users :? :*\n"
-           (sut/hugsql-signature :select "users" {:depluralize? true}))))
-  (testing "can create update signature"
-    (is (= "-- :name update-user! :! :n\n"
-           (sut/hugsql-signature :update "users" {:depluralize? true}))))
-  (testing "can create delete signature"
-    (is (= "-- :name delete-user! :! :n\n"
-           (sut/hugsql-signature :delete "users" {:depluralize? true})))))
+  (let [table-1-spec
+        {:name    "users"
+         :columns [["id" [:uuid] [[:primary-key]]]
+                   ["username" [:text]]]}
+
+        table-2-spec
+        {:name    "users"
+         :columns [["id" [:uuid]]
+                   ["username" [:text]]]
+         :constraints [[:primary-key "id" "username"]]}]
+    (testing "can create insert signature"
+      (is (= "-- :name create-user! :! :n\n"
+             (sut/hugsql-signature table-1-spec :insert {:depluralize? true}))))
+    (testing "can create select signature"
+      (is (= "-- :name get-users :? :*\n"
+             (sut/hugsql-signature table-1-spec :select {:depluralize? true}))))
+    (testing "can create select-by-{pk} signature"
+      (is (= "-- :name get-user-by-id :? :1\n"
+             (sut/hugsql-signature table-1-spec :select-by-pk {:depluralize? true}))))
+    (testing "can create select-by-{pk}s signature"
+      (is (= "-- :name get-user-by-id-and-username :? :1\n"
+             (sut/hugsql-signature table-2-spec :select-by-pk {:depluralize? true}))))
+    (testing "can create update signature"
+      (is (= "-- :name update-user! :! :n\n"
+             (sut/hugsql-signature table-1-spec :update {:depluralize? true}))))
+    (testing "can create delete signature"
+      (is (= "-- :name delete-user! :! :n\n"
+             (sut/hugsql-signature table-1-spec :delete {:depluralize? true}))))))

@@ -16,19 +16,23 @@
                 :or   {filename (str "add-" (:name table-spec) "-table.up")}
                 :as   opts}]
    (let [insert-sql
-         (str (q/hugsql-signature :insert (:name table-spec) {:depluralize? true})
+         (str (q/hugsql-signature table-spec :insert {:depluralize? true})
               (q/insert table-spec (comp q/append-column-cast q/hugsql-var)))
          
          select-sql
-         (str (q/hugsql-signature :select (:name table-spec) {:depluralize? true})
+         (str (q/hugsql-signature table-spec :select {:depluralize? true})
               (q/select table-spec))
 
+         select-by-pk-sql
+         (str (q/hugsql-signature table-spec :select-by-pk {:depluralize? true})
+              (q/select table-spec))
+         
          update-sql
-         (str (q/hugsql-signature :update (:name table-spec) {:depluralize? true})
+         (str (q/hugsql-signature table-spec :update {:depluralize? true})
               (q/update table-spec (comp q/append-column-cast q/hugsql-var)))
 
          delete-sql
-         (str (q/hugsql-signature :delete (:name table-spec) {:depluralize? true})
+         (str (q/hugsql-signature table-spec :delete {:depluralize? true})
               (q/delete table-spec (comp q/append-column-cast q/hugsql-var)))]
-     (spit filename (str/join "\n\n" [insert-sql select-sql update-sql delete-sql])))))
+     (spit filename (str/join "\n\n" [insert-sql select-sql select-by-pk-sql update-sql delete-sql])))))
 

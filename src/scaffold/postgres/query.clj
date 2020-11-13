@@ -5,21 +5,55 @@
             [scaffold.postgres.constraints :as constraints])
   (:refer-clojure :exclude [update] ))
 
+(defn column-spec? [table-constraint-or-column]
+  ;; A column is a vector where the first item is the column-name
+  ;; second item is a vector containing the type
+  ;; third item is a vector of constraints
+  (and (string? (nth table-constraint-or-column 0))
+       (vector? (nth table-constraint-or-column 1))
+       (vector? (nth table-constraint-or-column 2))))
+
+(defn find-primary-key-table-constraint
+  "Finds the constraint in the table-spec :constraints which is a :primary-key"
+  [table-spec]
+  (first (filter constraints/primary-key? (:constraints table-spec))))
+
+(defn column-contains-primary-key?
+  "Checks if the column in the column-spec has a :primary-key constraint"
+  [[_ _ constraints
+    :as column-spec]]
+  (seq (filter constraints/primary-key? constraints)))
+
+(defn find-primary-key-column [column-specs]
+  (first (filter column-contains-primary-key? column-specs)))
+
+(defn find-primary-key-columns [table-spec]
+  (or (find-primary-key-table-constraint table-spec)
+      (find-primary-key-column (:columns table-spec))))
+
 (defn hugsql-var [column-spec]
   (clojure.core/update column-spec 0 #(str ":" %)))
 
 (defn hugsql-signature
-  ([action column-name]
-   (hugsql-signature action column-name {}))
-  ([action column-name {:keys [depluralize?]
-                        :or   {depluralize? false}
-                        :as   opts}]
-   {:pre [(s/valid? #{:insert :select :delete :update} action)]}
-   (let [signature (condp = action
-                     :insert (str "create-" (if depluralize? (inflections/singular column-name) column-name) "! :! :n")
-                     :select (str "get-" column-name " :? :*")
-                     :delete (str "delete-" (if depluralize? (inflections/singular column-name) column-name) "! :! :n")
-                     :update (str "update-" (if depluralize? (inflections/singular column-name) column-name) "! :! :n"))]
+  ([table-spec action]
+   (hugsql-signature table-spec action {}))
+  ([table-spec action {:keys [depluralize?]
+                       :or   {depluralize? false}
+                       :as   opts}]
+   {:pre [(s/valid? #{:insert :select :select-by-pk :delete :update} action)]}
+   (let [table-name        (:name table-spec)
+         primary-key       (find-primary-key-columns table-spec)
+         select-by-pk-name (if (column-spec? primary-key)
+                             (first primary-key)
+                             (str/join "-and-" (if (keyword? (first primary-key))
+                                                 (drop 1 primary-key)
+                                                 (drop 2 primary-key))))
+         signature         (condp = action
+                             :insert       (str "create-" (if depluralize? (inflections/singular table-name) table-name) "! :! :n")
+                             :select       (str "get-" table-name " :? :*")
+                             :select-by-pk (str "get-" (if depluralize? (inflections/singular table-name) table-name) "-by-" select-by-pk-name " :? :1")
+                             :delete       (str "delete-" (if depluralize? (inflections/singular table-name) table-name) "! :! :n")
+                             :update       (str "update-" (if depluralize? (inflections/singular table-name) table-name) "! :! :n"))]
      (str "-- :name " signature "\n" ))))
 
 (defn jdbc-val [column-spec]
@@ -42,32 +76,6 @@
 
 (defn update-fields [column-specs prepare-column-value-fn]
   (mapv #(update-field % prepare-column-value-fn) column-specs))
-
-(defn find-primary-key-table-constraint
-  "Finds the constraint in the table-spec :constraints which is a :primary-key"
-  [table-spec]
-  (first (filter constraints/primary-key? (:constraints table-spec))))
-
-(defn column-contains-primary-key?
-  "Checks if the column in the column-spec has a :primary-key constraint"
-  [[_ _ constraints
-    :as column-spec]]
-  (seq (filter constraints/primary-key? constraints)))
-
-(defn column-spec? [table-constraint-or-column]
-  ;; A column is a vector where the first item is the column-name
-  ;; second item is a vector containing the type
-  ;; third item is a vector of constraints
-  (and (string? (nth table-constraint-or-column 0))
-       (vector? (nth table-constraint-or-column 1))
-       (vector? (nth table-constraint-or-column 2))))
-
-(defn find-primary-key-column [column-specs]
-  (first (filter column-contains-primary-key? column-specs)))
-
-(defn find-primary-key-columns [table-spec]
-  (or (find-primary-key-table-constraint table-spec)
-      (find-primary-key-column (:columns table-spec))))
 
 (defn find-column-by-name [column-name column-specs]
   (first (filter #(= column-name (first %)) column-specs)))
@@ -106,6 +114,13 @@
                columns    :columns
                :as        table-spec}]  
   (str "SELECT " (str/join ", " (map first columns)) " FROM " table-name))
+
+(defn select-by-pk [{table-name :name
+                     columns          :columns
+                     :as              table-spec}
+                    prepare-column-value-fn]  
+  (str "SELECT " (str/join ", " (map first columns)) " FROM " table-name
+       " WHERE " (where-clause table-spec prepare-column-value-fn)))
 
 (defn update [{table-name :name
                         columns    :columns
