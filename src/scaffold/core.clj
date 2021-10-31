@@ -5,15 +5,15 @@
 
 (defn generate-migration
   ([table-spec]
-   (generate-migration table-spec (str "add-" (:name table-spec) "-table.up")))
+   (generate-migration table-spec (str "add-" (:name table-spec) "-table.up.sql")))
   ([table-spec filename]
    (spit filename (pg/table-sql table-spec))))
 
 (defn generate-hugsql-queries
   ([table-spec]
-   (generate-migration table-spec {}))
+   (generate-hugsql-queries table-spec {}))
   ([table-spec {:keys [filename]
-                :or   {filename (str "add-" (:name table-spec) "-table.up")}
+                :or   {filename (str (:name table-spec) "-queries.sql")}
                 :as   opts}]
    (let [insert-sql
          (str (q/hugsql-signature table-spec :insert {:depluralize? true})
@@ -36,3 +36,7 @@
               (q/delete table-spec (comp q/append-column-cast q/hugsql-var)))]
      (spit filename (str/join "\n\n" [insert-sql select-sql select-by-pk-sql update-sql delete-sql])))))
 
+
+(def sample-table-spec
+  {:name "users"
+   :columns [["id" [:uuid] [[:primary-key]]]]})
