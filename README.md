@@ -21,6 +21,7 @@ but the focus is currently on the following stack:
   - [x] Data types
 - [x] Generate basic CRUD queries
 - [ ] Generate CRUD request handlers
+- [x] Generate reitit routes
 - [ ] Generate re-frame events and subscriptions
 
 ## License

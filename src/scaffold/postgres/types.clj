@@ -118,3 +118,54 @@
      (if generate-fn
        (generate-fn additional)
        :invalid-type))))
+
+(def bigint-pred
+  (list 'fn '[n]
+        (list '= 'clojure.lang.BigInt (list 'type 'n))))
+
+(def pgtype->clj-predicate
+  {:bigint        bigint-pred
+   :bigserial     bigint-pred
+   :bit           'int?
+   :varbit        'string?
+   :boolean       'boolean?
+   :box           'string? ;; todo
+   :bytea         'bytes?
+   :char          'char?
+   :varchar       'string?
+   :cidr          'string? ;; todo
+   :circle        'string? ;; todo
+   :citext        'string?
+   :date          'string? ;; todo
+   :double        'double?
+   :inet          'string?
+   :integer       'int?
+   :interval      'string? ;; todo
+   :json          'string? ;; todo
+   :jsonb         'string? ;; todo
+   :line          'string? ;; todo
+   :lseg          'string? ;; todo
+   :macaddr       'string? ;; todo
+   :macaddr8      'string? ;; todo
+   :money         'string? ;; todo
+   :numeric       'number?
+   :path          'string? ;; todo
+   :pg_lsn        'string? ;; todo
+   :pg_snapshot   'string? ;; todo
+   :point         'string? ;; todo
+   :polygon       'string? ;; todo
+   :real          'float?
+   :smallint      'int? ;; todo
+   :smallserial   'int? ;; todo
+   :serial        'int?
+   :text          'string?
+   :time          'string? ;; todo
+   :timetz        'string? ;; todo
+   :timestamp     'string? ;; todo
+   :timestamptz   'string? ;; todo
+   :tsquery       'string? ;; todo
+   :tsvector      'string? ;; todo
+   :txid_snapshot 'string? ;; todo
+   :uuid          'uuid?
+   :xml           'string? ;; todo
+   })

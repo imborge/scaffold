@@ -108,3 +108,11 @@
 
 (defn table-constraint [constraint-vec]
   (constraint constraint-vec table-constraint->generator))
+
+(defn table-constraint? [constraint-vec]
+  (keyword? (first constraint-vec)))
+
+(defn column-names-from-constraint [constraint-vec]
+  (if (table-constraint? constraint-vec)
+    (vec (drop 1 constraint-vec))
+    [(first constraint-vec)]))
