@@ -7,12 +7,6 @@
 
 (s/def ::action #{:insert :select :select-by-pk :delete :update})
 
-(defn table-spec->query-names [table-spec]
-  (map
-   (fn [action]
-     [action (keyword (name (:name table-spec)) (name action))])
-   (s/describe ::action)))
-
 (defn column-spec? [table-constraint-or-column]
   ;; A column is a vector where the first item is the column-name
   ;; second item is a vector containing the type
