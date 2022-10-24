@@ -5,6 +5,14 @@
             [scaffold.postgres.constraints :as constraints])
   (:refer-clojure :exclude [update] ))
 
+(s/def ::action #{:insert :select :select-by-pk :delete :update})
+
+(defn table-spec->query-names [table-spec]
+  (map
+   (fn [action]
+     [action (keyword (name (:name table-spec)) (name action))])
+   (s/describe ::action)))
+
 (defn column-spec? [table-constraint-or-column]
   ;; A column is a vector where the first item is the column-name
   ;; second item is a vector containing the type
@@ -34,26 +42,40 @@
 (defn hugsql-var [column-spec]
   (clojure.core/update column-spec 0 #(str ":" %)))
 
+(defn hugsql-query-name [table-spec action {:keys [depluralize?]
+                                            :or   {depluralize? false}
+                                            :as   opts}]
+  (let [table-name        (:name table-spec)
+        primary-key       (find-primary-key-columns table-spec)
+        select-by-pk-name (if (column-spec? primary-key)
+                            (first primary-key)
+                            (str/join "-and-" (if (keyword? (first primary-key))
+                                                (drop 1 primary-key)
+                                                (drop 2 primary-key))))
+        query-ns          (if depluralize?
+                            (inflections/singular table-name)
+                            table-name)]
+    (condp = action
+      :insert       (str query-ns "/create")
+      :select       (str query-ns "/get")
+      :select-by-pk (str query-ns "/get-by-" select-by-pk-name)
+      :delete       (str query-ns "/delete")
+      :update       (str query-ns "/update"))))
+
 (defn hugsql-signature
   ([table-spec action]
    (hugsql-signature table-spec action {}))
   ([table-spec action {:keys [depluralize?]
                        :or   {depluralize? false}
                        :as   opts}]
-   {:pre [(s/valid? #{:insert :select :select-by-pk :delete :update} action)]}
+   {:pre [(s/valid? ::action action)]}
    (let [table-name        (:name table-spec)
-         primary-key       (find-primary-key-columns table-spec)
-         select-by-pk-name (if (column-spec? primary-key)
-                             (first primary-key)
-                             (str/join "-and-" (if (keyword? (first primary-key))
-                                                 (drop 1 primary-key)
-                                                 (drop 2 primary-key))))
          signature         (condp = action
-                             :insert       (str "create-" (if depluralize? (inflections/singular table-name) table-name) "! :! :n")
-                             :select       (str "get-" table-name " :? :*")
-                             :select-by-pk (str "get-" (if depluralize? (inflections/singular table-name) table-name) "-by-" select-by-pk-name " :? :1")
-                             :delete       (str "delete-" (if depluralize? (inflections/singular table-name) table-name) "! :! :n")
-                             :update       (str "update-" (if depluralize? (inflections/singular table-name) table-name) "! :! :n"))]
+                             :insert       (str (hugsql-query-name table-spec :insert opts) "! :! :n")
+                             :select       (str (hugsql-query-name table-spec :select opts) " :? :*")
+                             :select-by-pk (str (hugsql-query-name table-spec :select-by-pk opts) " :? :1")
+                             :delete       (str (hugsql-query-name table-spec :delete opts) "! :! :n")
+                             :update       (str (hugsql-query-name table-spec :update opts) "! :! :n"))]
      (str "-- :name " signature "\n" ))))
 
 (defn jdbc-val [column-spec]

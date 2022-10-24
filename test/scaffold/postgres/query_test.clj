@@ -64,20 +64,20 @@
                    ["username" [:text]]]
          :constraints [[:primary-key "id" "username"]]}]
     (testing "can create insert signature"
-      (is (= "-- :name create-user! :! :n\n"
+      (is (= "-- :name user/create! :! :n\n"
              (sut/hugsql-signature table-1-spec :insert {:depluralize? true}))))
     (testing "can create select signature"
-      (is (= "-- :name get-users :? :*\n"
+      (is (= "-- :name user/get :? :*\n"
              (sut/hugsql-signature table-1-spec :select {:depluralize? true}))))
     (testing "can create select-by-{pk} signature"
-      (is (= "-- :name get-user-by-id :? :1\n"
+      (is (= "-- :name user/get-by-id :? :1\n"
              (sut/hugsql-signature table-1-spec :select-by-pk {:depluralize? true}))))
     (testing "can create select-by-{pk}s signature"
-      (is (= "-- :name get-user-by-id-and-username :? :1\n"
+      (is (= "-- :name user/get-by-id-and-username :? :1\n"
              (sut/hugsql-signature table-2-spec :select-by-pk {:depluralize? true}))))
     (testing "can create update signature"
-      (is (= "-- :name update-user! :! :n\n"
+      (is (= "-- :name user/update! :! :n\n"
              (sut/hugsql-signature table-1-spec :update {:depluralize? true}))))
     (testing "can create delete signature"
-      (is (= "-- :name delete-user! :! :n\n"
+      (is (= "-- :name user/delete! :! :n\n"
              (sut/hugsql-signature table-1-spec :delete {:depluralize? true}))))))
