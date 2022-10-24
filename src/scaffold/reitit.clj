@@ -26,7 +26,7 @@
   \"/:id/:email\""
   [table-spec]
   (let [primary-keys (q/find-primary-key-columns table-spec)]
-    (str "/" (str/join "/" (map (partial str ":") (c/column-names-from-constraint primary-keys))))))
+    (str "/" (str/join "/" (map keyword (c/column-names-from-constraint primary-keys))))))
 
 (defn primary-key-parameters [table-spec]
   (let [primary-keys (q/find-primary-key-columns table-spec)

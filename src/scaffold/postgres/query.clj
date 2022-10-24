@@ -2,36 +2,11 @@
   (:require [clojure.string :as str]
             [clojure.spec.alpha :as s]
             [inflections.core :as inflections]
-            [scaffold.postgres.constraints :as constraints])
-  (:refer-clojure :exclude [update] ))
+            [scaffold.postgres.constraints :as constraints]
+            [scaffold.model :as model])
+  (:refer-clojure :exclude [update]))
 
 (s/def ::action #{:insert :select :select-by-pk :delete :update})
-
-(defn column-spec? [table-constraint-or-column]
-  ;; A column is a vector where the first item is the column-name
-  ;; second item is a vector containing the type
-  ;; third item is a vector of constraints
-  (and (string? (nth table-constraint-or-column 0))
-       (vector? (nth table-constraint-or-column 1))
-       (vector? (nth table-constraint-or-column 2))))
-
-(defn find-primary-key-table-constraint
-  "Finds the constraint in the table-spec :constraints which is a :primary-key"
-  [table-spec]
-  (first (filter constraints/primary-key? (:constraints table-spec))))
-
-(defn column-contains-primary-key?
-  "Checks if the column in the column-spec has a :primary-key constraint"
-  [[_ _ constraints
-    :as column-spec]]
-  (seq (filter constraints/primary-key? constraints)))
-
-(defn find-primary-key-column [column-specs]
-  (first (filter column-contains-primary-key? column-specs)))
-
-(defn find-primary-key-columns [table-spec]
-  (or (find-primary-key-table-constraint table-spec)
-      (find-primary-key-column (:columns table-spec))))
 
 (defn hugsql-var [column-spec]
   (clojure.core/update column-spec 0 #(str ":" %)))
@@ -40,8 +15,8 @@
                                             :or   {depluralize? false}
                                             :as   opts}]
   (let [table-name        (:name table-spec)
-        primary-key       (find-primary-key-columns table-spec)
-        select-by-pk-name (if (column-spec? primary-key)
+        primary-key       (model/find-primary-key-columns table-spec)
+        select-by-pk-name (if (model/column-spec? primary-key)
                             (first primary-key)
                             (str/join "-and-" (if (keyword? (first primary-key))
                                                 (drop 1 primary-key)
@@ -93,31 +68,28 @@
 (defn update-fields [column-specs prepare-column-value-fn]
   (mapv #(update-field % prepare-column-value-fn) column-specs))
 
-(defn find-column-by-name [column-name column-specs]
-  (first (filter #(= column-name (first %)) column-specs)))
-
 (defn where-and-clause [table-spec prepare-column-value-fn pk-table-constraint]
   (let [columns      (if (constraints/has-name? pk-table-constraint)
                        (drop 2 pk-table-constraint)
                        (drop 1 pk-table-constraint))
-        column-specs (map #(find-column-by-name % (:columns table-spec)) columns)]
+        column-specs (map #(model/find-column-by-name % (:columns table-spec)) columns)]
     (str/join " AND " (map #(str (first %) " = " (first (prepare-column-value-fn %))) column-specs))))
 
 (defn where-clause [table-spec prepare-column-value-fn]
-  (let [primary-key-columns (find-primary-key-columns table-spec)]
+  (let [primary-key-columns (model/find-primary-key-columns table-spec)]
     (when (seq primary-key-columns)
-      (if (column-spec? primary-key-columns)
+      (if (model/column-spec? primary-key-columns)
         (str (first primary-key-columns) " = " (first (prepare-column-value-fn primary-key-columns)))
         (where-and-clause table-spec prepare-column-value-fn primary-key-columns)))))
 
 (defn primary-key-column?
   [table-spec column-name]
-  (if-let [table-pk (find-primary-key-table-constraint table-spec)]
+  (if-let [table-pk (model/find-primary-key-table-constraint table-spec)]
     (do
       (if (constraints/has-name? table-pk)
         ((set (drop 2 table-pk)) column-name)
         ((set (drop 1 table-pk)) column-name)))
-    (column-contains-primary-key? (find-column-by-name column-name (:columns table-spec)))))
+    (model/column-contains-primary-key? (model/find-column-by-name column-name (:columns table-spec)))))
 
 (defn insert [{table-name :name
                columns :columns}
