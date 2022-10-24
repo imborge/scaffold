@@ -21,7 +21,7 @@ but the focus is currently on the following stack:
   - [x] Data types
 - [x] Generate basic CRUD queries
 - [ ] Generate CRUD request handlers
-        needs to map query function for it to be complete
+  - needs to map query function to hugsql for it to be complete
 - [x] Generate reitit routes
 - [ ] Generate re-frame events and subscriptions
 
