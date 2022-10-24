@@ -20,9 +20,10 @@ but the focus is currently on the following stack:
   - [x] Table constraints
   - [x] Data types
 - [x] Generate basic CRUD queries
-- [ ] Generate CRUD request handlers
-  - needs to map query function to hugsql for it to be complete
+- [x] Generate CRUD request handlers
+  - [ ] Write tests
 - [x] Generate reitit routes
+  - [ ] Write tests
 - [ ] Generate re-frame events and subscriptions
 
 ## License

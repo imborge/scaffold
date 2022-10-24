@@ -46,17 +46,17 @@
            (map first) ;; column name
            (remove (set primary-key-column-names)))))))
 
-(defn routes [table-spec]
+(defn routes [table-spec query-fn]
   [(str "/" (:name table-spec))
    ["/"
-    {:get {:handler (handlers/index (keyword (q/hugsql-query-name table-spec :select {:depluralize? true})) 'query)}
+    {:get {:handler (handlers/index query-fn (keyword (q/hugsql-query-name table-spec :select {:depluralize? true})))}
      :post {:parameters {:body (body-parameters table-spec)}
-            :handler (handlers/create (keyword (q/hugsql-query-name table-spec :insert {:depluralize? true})) 'query)}}]
+            :handler (handlers/create query-fn (keyword (q/hugsql-query-name table-spec :insert {:depluralize? true})))}}]
    [(primary-key-path table-spec)
     {:get {:parameters {:path (primary-key-parameters table-spec)}
-           :handler (handlers/index (keyword (q/hugsql-query-name table-spec :select-by-pk {:depluralize? true})) 'query)}
+           :handler (handlers/detail query-fn (keyword (q/hugsql-query-name table-spec :select-by-pk {:depluralize? true})))}
      :delete {:parameters {:path (primary-key-parameters table-spec)}
-              :handler (handlers/index (keyword (q/hugsql-query-name table-spec :delete {:depluralize? true})) 'query)}}]])
+              :handler (handlers/delete query-fn (keyword (q/hugsql-query-name table-spec :delete {:depluralize? true})))}}]])
 
 (comment
 
