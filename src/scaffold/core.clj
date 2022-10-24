@@ -46,10 +46,10 @@
    :reitit/insert-path     [:__last :__after]
    ;; values:
    #_                      [[:__first :__before]
-                           [:__first :__after]
-                           [:__last :__before]
-                           ["/users" :__after]
-                           ["/users" :__before]]
+                            [:__first :__after]
+                            [:__last :__before]
+                            ["/users" :__after]
+                            ["/users" :__before]]
    :hugsql/queries-dir     "resources/queries/"
    :hugsql/queries-file    "my-queries.sql"
    :hugsql/queries-append? false
