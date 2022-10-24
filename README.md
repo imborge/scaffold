@@ -2,7 +2,16 @@
 
 [![scaffold](https://circleci.com/gh/imborge/scaffold.svg?style=svg)](https://circleci.com/gh/imborge/scaffold)
 
-A CRUD scaffolding library intended to be used with [Luminus](https://luminusweb.com/).
+A Clojure CRUD scaffolding library.
+
+The vision for the library is to be general enough to be used with e.g. Luminus or kit, 
+but the focus is currently on the following stack:
+
+- Ring
+  - metosin/ring-http-response
+- Reitit
+- HugSQL
+- (reagent/re-frame)
 
 ## TODO
 
