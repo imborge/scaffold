@@ -1,4 +1,4 @@
-(ns scaffold.request-handler
+(ns scaffold.request-handler-test
   (:require [scaffold.request-handler :as sut]
             [clojure.test :as t]))
 

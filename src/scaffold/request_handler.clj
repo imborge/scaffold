@@ -31,5 +31,3 @@
               (list 'ring.util.http-response/no-content)
               (list 'ring.util.http-response/bad-request
                     {:error (str query " did not delete any rows")}))))
-
-

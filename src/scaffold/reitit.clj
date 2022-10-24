@@ -1,10 +1,11 @@
 (ns scaffold.reitit
-  (:require [scaffold.postgres.constraints :as c]
-            [scaffold.postgres.query :as q]
-            [clojure.string :as str]
-            [scaffold.postgres.types :as t]
-            [scaffold.model :as model]
-            [scaffold.request-handler :as handlers]))
+  (:require
+   [clojure.string :as str]
+   [scaffold.model :as model]
+   [scaffold.postgres.constraints :as c]
+   [scaffold.postgres.query :as q]
+   [scaffold.postgres.types :as t]
+   [scaffold.request-handler :as handlers]))
 
 (defn primary-key-path
   "Generates the reitit resource path for `detail` and `delete`.
@@ -49,14 +50,38 @@
 (defn routes [table-spec query-fn]
   [(str "/" (:name table-spec))
    ["/"
-    {:get {:handler (handlers/index query-fn (keyword (q/hugsql-query-name table-spec :select {:depluralize? true})))}
-     :post {:parameters {:body (body-parameters table-spec)}
-            :handler (handlers/create query-fn (keyword (q/hugsql-query-name table-spec :insert {:depluralize? true})))}}]
+    {:get  {:handler
+            (handlers/index
+             query-fn
+             (keyword
+              (q/hugsql-query-name table-spec :select {:depluralize? true})))}
+     
+     :post {:parameters
+            {:body (body-parameters table-spec)}
+            
+            :handler
+            (handlers/create
+             query-fn
+             (keyword (q/hugsql-query-name table-spec :insert {:depluralize? true})))}}]
+   
    [(primary-key-path table-spec)
-    {:get {:parameters {:path (primary-key-parameters table-spec)}
-           :handler (handlers/detail query-fn (keyword (q/hugsql-query-name table-spec :select-by-pk {:depluralize? true})))}
-     :delete {:parameters {:path (primary-key-parameters table-spec)}
-              :handler (handlers/delete query-fn (keyword (q/hugsql-query-name table-spec :delete {:depluralize? true})))}}]])
+    {:get    {:parameters
+              {:path (primary-key-parameters table-spec)}
+
+              :handler
+              (handlers/detail
+               query-fn
+               (keyword
+                (q/hugsql-query-name table-spec :select-by-pk {:depluralize? true})))}
+     
+     :delete {:parameters
+              {:path (primary-key-parameters table-spec)}
+              
+              :handler
+              (handlers/delete
+               query-fn
+               (keyword
+                (q/hugsql-query-name table-spec :delete {:depluralize? true})))}}]])
 
 (comment
 
