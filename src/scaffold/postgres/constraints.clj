@@ -21,6 +21,9 @@
   {:pre [(s/valid? string? expr)]}
   (str "DEFAULT " expr))
 
+(defn default? [constraint]
+  (= :default (first constraint)))
+
 (def referential-action
   #{:restrict :cascade :noop :null :default})
 

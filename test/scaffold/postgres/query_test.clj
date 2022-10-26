@@ -7,6 +7,14 @@
     (is (= "INSERT INTO users (id)\nVALUES (:id::UUID)"
            (sut/insert {:name    "users"
                         :columns [["id" [:uuid]]]}
+                       (comp sut/hugsql-var sut/append-column-cast)))))
+
+  (testing "can create insert query without values for default fields"
+    (is (= "INSERT INTO users (email, password)\nVALUES (:email, :password)"
+           (sut/insert {:name "users"
+                        :columns [["id" [:uuid] [[:default "uuid_generate_v4()"]]]
+                                  ["email" [:text]]
+                                  ["password" [:text]]]}
                        (comp sut/hugsql-var sut/append-column-cast))))))
 
 (deftest select-queries

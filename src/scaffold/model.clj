@@ -20,6 +20,10 @@
     :as column-spec]]
   (seq (filter constraints/primary-key? constraints)))
 
+(defn column-has-default?
+  [[column-name column-type constraints :as column-spec]]
+  (some true? (map constraints/default? constraints)))
+
 (defn find-primary-key-column [column-specs]
   (first (filter column-contains-primary-key? column-specs)))
 

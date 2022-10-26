@@ -94,9 +94,10 @@
 (defn insert [{table-name :name
                columns :columns}
               prepare-column-value-fn]
-  (str "INSERT INTO " table-name
-       " (" (str/join ", " (map first columns)) ")\n"
-       "VALUES (" (str/join ", " (map (comp first prepare-column-value-fn) columns)) ")"))
+  (let [columns (remove model/column-has-default? columns)]
+    (str "INSERT INTO " table-name
+         " (" (str/join ", " (map first columns)) ")\n"
+         "VALUES (" (str/join ", " (map (comp first prepare-column-value-fn) columns)) ")")))
 
 (defn select [{table-name :name
                columns    :columns
