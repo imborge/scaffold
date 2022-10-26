@@ -62,7 +62,7 @@
     (println "Done")))
 
 (defn save-queries! [configuration queries]
-  (println "Saving queries to" (:hugsql/queries-filename configuration))
+  (println "Saving queries to" (:hugsql/queries-file configuration))
   (let [queries-file-exists? (.exists (io/file (:hugsql/queries-file configuration)))
         append?              (:hugsql/queries-append? configuration)]
     (if (and queries-file-exists? (not append?))
