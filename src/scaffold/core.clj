@@ -1,12 +1,14 @@
 (ns scaffold.core
-  (:require [clojure.string :as str]
+  (:require [clojure.edn :as edn]
+            [clojure.java.io :as io]
+            [clojure.pprint]
+            [clojure.spec.alpha :as s]
+            [clojure.string :as str]
+            [scaffold.model :as m]
             [scaffold.postgres.core :as pg]
             [scaffold.postgres.query :as q]
             [scaffold.reitit :as reitit]
-            [scaffold.model :as m]
-            [clojure.java.io :as io]
-            [clojure.pprint]
-            [clojure.spec.alpha :as s])
+            [scaffold.request-handlers :as handlers])
   (:import [java.time LocalDateTime]
            [java.time.format DateTimeFormatter]))
 
@@ -51,9 +53,14 @@
                                            (DateTimeFormatter/ofPattern "yyyyMMddHHmmss"))
                                   "-create-" (:name table-spec) "-table.up.sql"))
    :reitit/routes-file     "routes.clj"
+   :request-handler/file   nil
+   :request-handler/dir    "src/imborge/kit_test/web/controllers"
    :hugsql/queries-file    "my-queries.sql"
    :hugsql/queries-append? false
-   :hugsql/query-fn        'db.my-query-fn})
+   :hugsql/query-fn        'db.my-query-fn
+   :queries/naming-strategy (fn [table-spec action]
+                              (keyword
+                               (q/hugsql-query-name table-spec action {:depluralize? true})))})
 
 (defn save-migration! [configuration migration]
   (let [migration-filepath (str (:migrations/dir configuration) (:name migration))]
@@ -70,6 +77,25 @@
       (do
         (spit (:hugsql/queries-file configuration) queries :append true)
         (println "Done")))))
+
+(defn save-request-handlers! [configuration handlers]
+  (spit
+   (:filename handlers)
+   (str (with-out-str
+          (clojure.pprint/write
+           (handlers/controller-ns (:ns handlers))
+           :dispatch clojure.pprint/code-dispatch))
+        "\n\n"
+        (str/join
+         "\n\n"
+         (map
+          (fn print-handler [handler]
+            (with-out-str
+              (clojure.pprint/write
+               handler
+               :dispatch clojure.pprint/code-dispatch)))
+          (vals (:handlers handlers)))))
+   :append (:request-handler/append? configuration)))
 
 (defn save-routes! [configuration table-spec routes]
   (let [filename     (:reitit/routes-file configuration)
@@ -94,11 +120,16 @@
                                              :routes        routes})))))
 
 (defn scaffold! [configuration table-spec]
-  (let [migration (generate-migration configuration table-spec)
-        queries (generate-hugsql-queries table-spec)
-        routes (reitit/routes table-spec (:hugsql/query-fn configuration))]
+  (let [deps          (when (.exists (io/file "deps.edn"))
+                        (edn/read-string (slurp "deps.edn")))
+        configuration (assoc configuration :deps deps)
+        migration     (generate-migration configuration table-spec)
+        queries       (generate-hugsql-queries table-spec)
+        handlers      (handlers/generate configuration table-spec [:all])
+        routes        (reitit/routes table-spec handlers)]
     (println "Scaffolding...")
     (save-migration! configuration migration)
     (save-queries! configuration queries)
+    (save-request-handlers! configuration handlers)
     (save-routes! configuration table-spec routes)
     (println "Scaffolding done.")))
