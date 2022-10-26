@@ -3,11 +3,17 @@
             [scaffold.postgres.core :as pg]
             [scaffold.postgres.query :as q]
             [scaffold.reitit :as reitit]
-            [scaffold.model :as m]))
+            [scaffold.model :as m]
+            [clojure.java.io :as io]
+            [clojure.pprint]
+            [clojure.spec.alpha :as s])
+  (:import [java.time LocalDateTime]
+           [java.time.format DateTimeFormatter]))
 
 (defn generate-migration
-  [table-spec]
-  (pg/table-sql table-spec))
+  [configuration table-spec]
+  {:name ((:migrations/filename-fn configuration) table-spec)
+   :sql  (pg/table-sql table-spec)})
 
 (defn generate-hugsql-queries
   [table-spec]
@@ -40,25 +46,59 @@
 (def sample-configuration
   {:migrations/dir         "resources/migrations/"
    :migrations/overwrite?  false
-   :reitit/insert?         true
-   :reitit/routes-file     "" ;; file containing routes
-   :reitit/routes-var      'routes ;; var containing routes vector
-   :reitit/insert-path     [:__last :__after]
-   ;; values:
-   #_                      [[:__first :__before]
-                            [:__first :__after]
-                            [:__last :__before]
-                            ["/users" :__after]
-                            ["/users" :__before]]
-   :hugsql/queries-dir     "resources/queries/"
+   :migrations/filename-fn (fn [table-spec]
+                             (str (.format (LocalDateTime/now)
+                                           (DateTimeFormatter/ofPattern "yyyyMMddHHmmss"))
+                                  "-create-" (:name table-spec) "-table.up.sql"))
+   :reitit/routes-file     "routes.clj"
    :hugsql/queries-file    "my-queries.sql"
    :hugsql/queries-append? false
    :hugsql/query-fn        'db.my-query-fn})
 
-(defn scaffold [configuration table-spec]
-  (let [migration (generate-migration table-spec)
+(defn save-migration! [configuration migration]
+  (let [migration-filepath (str (:migrations/dir configuration) (:name migration))]
+    (println "Saving migration to" migration-filepath)
+    (spit migration-filepath (:sql migration))
+    (println "Done")))
+
+(defn save-queries! [configuration queries]
+  (println "Saving queries to" (:hugsql/queries-filename configuration))
+  (let [queries-file-exists? (.exists (io/file (:hugsql/queries-file configuration)))
+        append?              (:hugsql/queries-append? configuration)]
+    (if (and queries-file-exists? (not append?))
+      (throw (ex-info "File already exists and :hugsql/queries-append? is set to false" {}))
+      (do
+        (spit (:hugsql/queries-file configuration) queries :append true)
+        (println "Done")))))
+
+(defn save-routes! [configuration table-spec routes]
+  (let [filename     (:reitit/routes-file configuration)
+        file-exists? (.exists (io/file filename))]
+    (println "Saving routes to" filename)
+    (cond
+      file-exists?
+      (do
+        (spit
+         filename
+         (str
+          "\n"
+          (with-out-str
+            (clojure.pprint/write
+             (list 'def (symbol (str (:name table-spec) "-routes")) routes)
+             :dispatch clojure.pprint/code-dispatch)))
+         :append true)
+        (println "Done."))
+
+      :else
+      (throw (ex-info "File doesn't exist. Error saving routes" {:configuration configuration
+                                             :routes        routes})))))
+
+(defn scaffold! [configuration table-spec]
+  (let [migration (generate-migration configuration table-spec)
         queries (generate-hugsql-queries table-spec)
         routes (reitit/routes table-spec (:hugsql/query-fn configuration))]
-    {:migration migration
-     :queries queries
-     :routes routes}))
+    (println "Scaffolding...")
+    (save-migration! configuration migration)
+    (save-queries! configuration queries)
+    (save-routes! configuration table-spec routes)
+    (println "Scaffolding done.")))
