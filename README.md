@@ -4,6 +4,8 @@
 
 A Clojure CRUD scaffolding library.
 
+**THIS IS A WORK IN PROGRESS**
+
 The vision for the library is to be general enough to be used with e.g. Luminus or kit, 
 but the focus is currently on the following stack:
 
