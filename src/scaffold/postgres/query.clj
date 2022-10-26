@@ -25,11 +25,11 @@
                             (inflections/singular table-name)
                             table-name)]
     (condp = action
-      :insert       (str query-ns "/create")
+      :insert       (str query-ns "/create!")
       :select       (str query-ns "/get")
       :select-by-pk (str query-ns "/get-by-" select-by-pk-name)
-      :delete       (str query-ns "/delete")
-      :update       (str query-ns "/update"))))
+      :delete       (str query-ns "/delete!")
+      :update       (str query-ns "/update!"))))
 
 (defn hugsql-signature
   ([table-spec action]
@@ -40,11 +40,11 @@
    {:pre [(s/valid? ::action action)]}
    (let [table-name        (:name table-spec)
          signature         (condp = action
-                             :insert       (str (hugsql-query-name table-spec :insert opts) "! :! :n")
+                             :insert       (str (hugsql-query-name table-spec :insert opts) " :! :n")
                              :select       (str (hugsql-query-name table-spec :select opts) " :? :*")
                              :select-by-pk (str (hugsql-query-name table-spec :select-by-pk opts) " :? :1")
-                             :delete       (str (hugsql-query-name table-spec :delete opts) "! :! :n")
-                             :update       (str (hugsql-query-name table-spec :update opts) "! :! :n"))]
+                             :delete       (str (hugsql-query-name table-spec :delete opts) " :! :n")
+                             :update       (str (hugsql-query-name table-spec :update opts) " :! :n"))]
      (str "-- :name " signature "\n" ))))
 
 (defn jdbc-val [column-spec]
