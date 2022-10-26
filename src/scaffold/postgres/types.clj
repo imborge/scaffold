@@ -117,7 +117,7 @@
          generate-fn (type->generator-map pgtype)]
      (if generate-fn
        (generate-fn additional)
-       :invalid-type))))
+       (throw (ex-info (str "invalid type " pgtype)))))))
 
 (def bigint-pred
   (list 'fn '[n]
