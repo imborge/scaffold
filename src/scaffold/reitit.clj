@@ -5,7 +5,7 @@
    [scaffold.postgres.constraints :as c]
    [scaffold.postgres.query :as q]
    [scaffold.postgres.types :as t]
-   [scaffold.request-handler :as handlers]))
+   [scaffold.request-handlers :as handlers]))
 
 (defn primary-key-path
   "Generates the reitit resource path for `detail` and `delete`.

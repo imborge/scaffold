@@ -21,7 +21,7 @@ but the focus is currently on the following stack:
   - [x] Data types
 - [x] Generate basic CRUD queries
 - [x] Generate CRUD request handlers
-  - [ ] Write tests
+  - [x] Write tests
 - [x] Generate reitit routes
   - [ ] Write tests
 - [ ] Generate re-frame events and subscriptions

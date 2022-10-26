@@ -6,7 +6,12 @@
         inflections/inflections {:mvn/version "0.13.2"}
         rewrite-clj/rewrite-clj {:mvn/version "1.1.45"}}
  :aliases
- {:build {:deps       {io.github.clojure/tools.build {:git/sha "e3e3532"
-                                                      :git/tag "v0.8.0" :git/url "https://github.com/clojure/tools.build.git"}
-                       slipset/deps-deploy           {:mvn/version "0.2.0"}}
-          :ns-default build}}}
+ {:build    {:deps       {io.github.clojure/tools.build {:git/sha "e3e3532"
+                                                         :git/tag "v0.8.0" :git/url "https://github.com/clojure/tools.build.git"}
+                          slipset/deps-deploy           {:mvn/version "0.2.0"}}
+             :ns-default build}
+  :env/dev  {:extra-paths ["env/dev"]
+             :ns-default  'scaffold.core}
+  :env/test {:extra-deps  {ring/ring                  {:mvn/version "1.9.6"}
+                           metosin/ring-http-response {:mvn/version "0.9.3"}}
+             :extra-paths ["test"]}}}
