@@ -12,6 +12,9 @@
              :ns-default build}
   :env/dev  {:extra-paths ["env/dev"]
              :ns-default  'scaffold.core}
-  :env/test {:extra-deps  {ring/ring                  {:mvn/version "1.9.6"}
-                           metosin/ring-http-response {:mvn/version "0.9.3"}}
-             :extra-paths ["test"]}}}
+  :env/test {:extra-deps  {ring/ring                            {:mvn/version "1.9.6"}
+                           metosin/ring-http-response           {:mvn/version "0.9.3"}
+                           io.github.cognitect-labs/test-runner {:git/tag "v0.5.1" :git/sha "dfb30dd"}}
+             :extra-paths ["test"]
+             :main-opts   ["-m" "cognitect.test-runner"]
+             :exec-fn     cognitect.test-runner.api/test}}}
