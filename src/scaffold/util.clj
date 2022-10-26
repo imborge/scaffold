@@ -31,14 +31,16 @@
   `path` = src/clj/some/file.clj
   returns some.file"
   [src-dir path]
-  (if (.startsWith path src-dir)
-    (let [path-without-src-dir (->> path
-                                    (drop (count src-dir))
-                                    remove-slash-prefix)]
-      (-> path-without-src-dir
-          (str/replace #"\..*$" "") ;; remove ext
-          (str/replace #"\/" "."))) ;; convert / to .
-    path))
+  (let [path
+        (if (.startsWith path src-dir)
+          (->> path
+               (drop (count src-dir))
+               remove-slash-prefix)
+          path)]
+    (-> path
+        (str/replace #"\..*$" "") ;; remove ext
+        (str/replace #"\/" ".")   ;; convert / to .
+        symbol)))
 
 (defn compute-request-handler-filename [dir config-filename table-spec]
   (cond

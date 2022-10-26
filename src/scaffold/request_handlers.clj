@@ -12,7 +12,7 @@
                                 :or   {defn? true}
                                 :as   opts}]
   (list (if defn? 'defn 'fn) 'create '[request]
-        (list 'if (list < 0 (list query-fn query '(:params request)))
+        (list 'if (list '< 0 (list query-fn query '(:params request)))
               (list 'ring.util.http-response/created)
               (list 'ring.util.http-response/bad-request
                     {:error (str query " inserting failed")}))))
@@ -45,7 +45,7 @@
                                 :or   {defn? true}
                                 :as   opts}]
   (list (if defn? 'defn 'fn) 'delete '[request]
-        (list 'if (list < 0 (list query-fn query '(:params request)))
+        (list 'if (list '< 0 (list query-fn query '(:params request)))
               (list 'ring.util.http-response/no-content)
               (list 'ring.util.http-response/bad-request
                     {:error (str query " did not delete any rows")}))))
@@ -64,13 +64,15 @@
         (:queries/naming-strategy configuration)
         
         handlers
-        {:index  (index (:query-fn configuration)
+        {:index  (index (:hugsql/query-fn configuration)
                         (query-naming-fn table-spec :select))
-         :detail (detail (:query-fn configuration)
+         :create (create (:hugsql/query-fn configuration)
+                         (query-naming-fn table-spec :insert))
+         :detail (detail (:hugsql/query-fn configuration)
                          (query-naming-fn table-spec :select-by-pk))
-         :update (update (:query-fn configuration)
+         :update (update (:hugsql/query-fn configuration)
                          (query-naming-fn table-spec :update))
-         :delete (delete (:query-fn configuration)
+         :delete (delete (:hugsql/query-fn configuration)
                          (query-naming-fn table-spec :delete))}]
     {:filename filename
      :ns       (util/create-ns-from-path src-dir filename)
