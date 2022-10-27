@@ -123,8 +123,8 @@
         (list '= 'clojure.lang.BigInt (list 'type 'n))))
 
 (def pgtype->clj-predicate
-  {:bigint        bigint-pred
-   :bigserial     bigint-pred
+  {:bigint        bigint-pred ;; Intentionally not quoted
+   :bigserial     bigint-pred ;; Intentionally not quoted
    :bit           'int?
    :varbit        'string?
    :boolean       'boolean?
