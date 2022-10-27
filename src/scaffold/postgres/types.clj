@@ -1,6 +1,5 @@
 (ns scaffold.postgres.types
-  (:require [clojure.spec.alpha :as s]
-            [clojure.string :as str])
+  (:require [clojure.spec.alpha :as s])
   (:refer-clojure :exclude [char time type]))
 
 (s/def ::numeric
@@ -103,7 +102,7 @@
    :timetz        timetz
    :timestamp     timestamp
    :timestamptz   timestamptz
-   :tsquery       (constantly "TSQUERY") 
+   :tsquery       (constantly "TSQUERY")
    :tsvector      (constantly "TSVECTOR")
    :txid_snapshot (constantly "TXID_SNAPSHOT")
    :uuid          (constantly "UUID")
@@ -117,7 +116,7 @@
          generate-fn (type->generator-map pgtype)]
      (if generate-fn
        (generate-fn additional)
-       (throw (ex-info (str "invalid type " pgtype)))))))
+       (throw (ex-info (str "invalid type " pgtype) {:additional additional}))))))
 
 (def bigint-pred
   (list 'fn '[n]

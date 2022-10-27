@@ -13,7 +13,7 @@
 
 (defn hugsql-query-name [table-spec action {:keys [depluralize?]
                                             :or   {depluralize? false}
-                                            :as   opts}]
+                                            :as   _opts}]
   (let [table-name        (:name table-spec)
         primary-key       (model/find-primary-key-columns table-spec)
         select-by-pk-name (if (model/column-spec? primary-key)
@@ -34,18 +34,15 @@
 (defn hugsql-signature
   ([table-spec action]
    (hugsql-signature table-spec action {}))
-  ([table-spec action {:keys [depluralize?]
-                       :or   {depluralize? false}
-                       :as   opts}]
+  ([table-spec action opts]
    {:pre [(s/valid? ::action action)]}
-   (let [table-name        (:name table-spec)
-         signature         (condp = action
+   (let [signature         (condp = action
                              :insert       (str (hugsql-query-name table-spec :insert opts) " :! :n")
                              :select       (str (hugsql-query-name table-spec :select opts) " :? :*")
                              :select-by-pk (str (hugsql-query-name table-spec :select-by-pk opts) " :? :1")
                              :delete       (str (hugsql-query-name table-spec :delete opts) " :! :n")
                              :update       (str (hugsql-query-name table-spec :update opts) " :! :n"))]
-     (str "-- :name " signature "\n" ))))
+     (str "-- :name " signature "\n"))))
 
 (defn jdbc-val [column-spec]
   (clojure.core/update column-spec 0 (constantly "?")))
@@ -85,10 +82,9 @@
 (defn primary-key-column?
   [table-spec column-name]
   (if-let [table-pk (model/find-primary-key-table-constraint table-spec)]
-    (do
-      (if (constraints/has-name? table-pk)
-        ((set (drop 2 table-pk)) column-name)
-        ((set (drop 1 table-pk)) column-name)))
+    (if (constraints/has-name? table-pk)
+      ((set (drop 2 table-pk)) column-name)
+      ((set (drop 1 table-pk)) column-name))
     (model/column-contains-primary-key? (model/find-column-by-name column-name (:columns table-spec)))))
 
 (defn insert [{table-name :name
@@ -101,20 +97,20 @@
 
 (defn select [{table-name :name
                columns    :columns
-               :as        table-spec}]  
+               :as        _table-spec}]
   (str "SELECT " (str/join ", " (map first columns)) " FROM " table-name))
 
 (defn select-by-pk [{table-name :name
                      columns          :columns
                      :as              table-spec}
-                    prepare-column-value-fn]  
+                    prepare-column-value-fn]
   (str "SELECT " (str/join ", " (map first columns)) " FROM " table-name
        " WHERE " (where-clause table-spec prepare-column-value-fn)))
 
 (defn update [{table-name :name
-                        columns    :columns
-                        :as        table-spec}
-                       prepare-column-value-fn]
+               _columns    :columns
+               :as        table-spec}
+              prepare-column-value-fn]
   (str "UPDATE " table-name " SET"
        "\n"
        (str/join ",\n" (update-fields (remove #(primary-key-column? table-spec (first %)) (:columns table-spec)) prepare-column-value-fn))
@@ -122,7 +118,7 @@
        "WHERE " (where-clause table-spec prepare-column-value-fn)))
 
 (defn delete [{table-name :name
-                        columns    :columns
-                        :as        table-spec}
-                       prepare-column-value-fn]
+               _columns    :columns
+               :as        table-spec}
+              prepare-column-value-fn]
   (str "DELETE FROM " table-name " WHERE " (where-clause table-spec prepare-column-value-fn)))
