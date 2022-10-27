@@ -13,15 +13,15 @@
                                 :as   opts}]
   (list (if defn? 'defn 'fn) 'create '[request]
         (list 'if (list '< 0 (list query-fn query '(:params request)))
-              (list 'ring.util.http-response/created)
-              (list 'ring.util.http-response/bad-request
+              (list 'response/created)
+              (list 'response/bad-request
                     {:error (str query " inserting failed")}))))
 
 (defn index [query-fn query & {:keys [defn?]
                                :or   {defn? true}
                                :as   opts}]
   (list (if defn? 'defn 'fn) 'index '[request]
-        (list 'ring.util.http-response/ok (list
+        (list 'response/ok (list
                                            query-fn query '(:params request)))))
 
 (defn detail [query-fn query & {:keys [defn?]
@@ -29,16 +29,16 @@
                                 :as   opts}]
   (list (if defn? 'defn 'fn) 'detail '[request]
         (list 'if-let ['entity (list query-fn query '(:params request))]
-              (list 'ring.util.http-response/ok 'entity)
-              (list 'ring.util.http-response/not-found))))
+              (list 'response/ok 'entity)
+              (list 'response/not-found))))
 
 (defn update [query-fn query & {:keys [defn?]
                                 :or   {defn? true}
                                 :as   opts}]
   (list (if defn? 'defn 'fn) 'update '[request]
         (list 'if-let ['entity (list query-fn query '(:params request))]
-              (list 'ring.util.http-response/ok 'entity)
-              (list 'ring.util.http-response/bad-request
+              (list 'response/ok 'entity)
+              (list 'response/bad-request
                     {:error (str query " did not return an entity")}))))
 
 (defn delete [query-fn query & {:keys [defn?]
@@ -46,8 +46,8 @@
                                 :as   opts}]
   (list (if defn? 'defn 'fn) 'delete '[request]
         (list 'if (list '< 0 (list query-fn query '(:params request)))
-              (list 'ring.util.http-response/no-content)
-              (list 'ring.util.http-response/bad-request
+              (list 'response/no-content)
+              (list 'response/bad-request
                     {:error (str query " did not delete any rows")}))))
 
 (defn generate [configuration table-spec actions]
