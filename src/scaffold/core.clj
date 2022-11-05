@@ -62,6 +62,28 @@
                               (keyword
                                (q/hugsql-query-name table-spec action {:depluralize? true})))})
 
+(defn default-filename-fn [table-spec]
+  (str (.format (LocalDateTime/now)
+                (DateTimeFormatter/ofPattern "yyyyMMddHHmmss"))
+       "-create-" (:name table-spec) "-table.up.sql"))
+
+(defn default-query-naming-strategy
+  [table-spec action]
+  (keyword
+   (q/hugsql-query-name table-spec action {:depluralize? true})))
+
+(def sample-configuration-2
+  {:migrations/dir          "resources/migrations/"
+   :migrations/overwrite?   false
+   :migrations/filename-fn  default-filename-fn
+   :reitit/routes-file      "src/test/routes.clj"
+   :request-handler/file    nil
+   :request-handler/dir     "src/test/controllers"
+   :hugsql/queries-file     "resources/test.sql"
+   :hugsql/queries-append?  false
+   :hugsql/query-fn         'db.my-query-fn
+   :queries/naming-strategy default-query-naming-strategy})
+
 (defn save-migration! [configuration migration]
   (let [migration-filepath (str (:migrations/dir configuration) (:name migration))]
     (println "Saving migration to" migration-filepath)
@@ -117,7 +139,7 @@
 
       :else
       (throw (ex-info "File doesn't exist. Error saving routes" {:configuration configuration
-                                             :routes        routes})))))
+                                                                 :routes        routes})))))
 
 (defn scaffold! [configuration table-spec]
   (let [deps          (when (.exists (io/file "deps.edn"))
