@@ -1,0 +1,20 @@
+{:name   "blog"
+ :tables [{:name    "tags"
+           :columns [["id" [:bigserial] [[:primary-key]]]
+                     ["name" [:citext] [[:unique] [:not-null]]]]}
+          {:name    "posts"
+           :columns [["id" [:bigserial] [[:primary-key]]]
+                     ["author_id" [:bigint] [[:not-null] [:references "users" "id"
+                                                          :on-delete :cascade]]]]}
+          {:name    "posts_tags"
+           :columns [["id" [:bigserial] [[:primary-key]]]
+                     ["post_id" [:bigint] [[:not-null] [:references "posts" "id"]]]
+                     ["tag_id" [:bigint] [[:not-null] [:references "tags" "id"]]]]}]
+ :relationships [[:many-to-many
+                  ["posts" "id"]
+                  ["tags" "id"]
+                  ["posts_tags" "post_id" "tag_id"]]
+                 [:many-to-one
+                  ["posts" "author_id"]
+                  ["users" "id"]]]}
+

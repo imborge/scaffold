@@ -1,5 +1,8 @@
 (ns scaffold.util
-  (:require [clojure.string :as str]))
+  (:require [clojure.string :as str]
+            [clojure.pprint]
+            [clojure.edn :as edn]
+            [clojure.java.io :as io]))
 
 (defn sanitize-filename [filename]
   (str/replace filename #"\-" "_"))
@@ -42,16 +45,37 @@
         (str/replace #"\/" ".")   ;; convert / to .
         symbol)))
 
-(defn compute-request-handler-filename [dir config-filename table-spec]
-  (cond
-    config-filename
-    (str (some-> dir remove-trailing-slashes)
-         "/"
-         config-filename)
+(defn form->str
+  "Return the a prettified string of `form` using clojure.pprint/code-dispatch
 
-    :else
-    (str
-     (some-> dir
-             remove-trailing-slashes)
-     "/"
-     (create-filename (:name table-spec)))))
+  Example usage:
+  (code->str '(println \"Kek\")
+  => \"(println \"kek\")"
+  [form]
+  (with-out-str
+    (clojure.pprint/write
+     form
+     :dispatch clojure.pprint/code-dispatch)))
+
+(defn deps-project? []
+  (.exists (io/as-file "deps.edn")))
+
+(defn src-dir?
+  [dir file-whose-path-should-start-with-dir]
+  (str/starts-with? file-whose-path-should-start-with-dir
+                    dir))
+
+(defn get-src-dir [src-file]
+  (when (deps-project?)
+    (first (filter #(src-dir? % src-file)
+                   (:paths (edn/read-string (slurp (io/as-file "deps.edn"))))))))
+
+#_(defn find-project-root-dir []
+    (loop [cwd "."]
+      (let [files (->> (file-seq cwd)
+                       (filter #(.isFile %))
+                       (filter
+                        #(#{"deps.edn"     ;; deps.edn
+                            "project.clj"} ;; leiningen
+                          (.getName %))))]
+        (if (seq files)))))

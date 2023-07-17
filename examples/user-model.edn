@@ -1,0 +1,5 @@
+{:name "user"
+ :tables
+ [{:name "users"
+   :columns    [["id" [:bigserial] [[:primary-key]]]
+                ["email" [:citext] [[:unique]]]]}]}

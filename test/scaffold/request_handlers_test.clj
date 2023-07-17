@@ -21,11 +21,11 @@
       (let [index (eval (sut/index (make-query-fn {}) :noquery :defn? false))]
         (is (= 200 (:status (index {}))))))
     (testing "detail handler returns 200 when query yields an entity"
-      (let [detail (eval (sut/detail (make-query-fn {:id 1 :username "test"}) :noquery :defn? false))]
-        (is (= 200 (:status (detail {}))))))
-    (testing "detail handler returns 404 when query yields nil"
-      (let [detail (eval (sut/detail (make-query-fn nil) :noquery :defn? false))]
-        (is (= 404 (:status (detail {}))))))
+      (let [single (eval (sut/single (make-query-fn {:id 1 :username "test"}) :noquery :defn? false))]
+        (is (= 200 (:status (single {}))))))
+    (testing "single handler returns 404 when query yields nil"
+      (let [single (eval (sut/single (make-query-fn nil) :noquery :defn? false))]
+        (is (= 404 (:status (single {}))))))
     (testing "update handler returns 200 on success"
       (let [update (eval (sut/update (make-query-fn {:id 2 :username "test"}) :noquery :defn? false))]
         (is (= 200 (:status (update {}))))))

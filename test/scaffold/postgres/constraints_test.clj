@@ -32,19 +32,18 @@
   (testing "can create references constraint with on delete"
     (doseq [action sut/referential-action]
       (is (= (str "REFERENCES users(id) ON DELETE " (sut/referential-action->str action))
-             (sut/column-constraint [:foreign-key "users" "id" action])))))
+             (sut/column-constraint [:foreign-key "users" "id" :on-delete action])))))
   (testing "can create references constraint with on update"
     (doseq [action sut/referential-action]
       (is (= (str "REFERENCES users(id) ON UPDATE " (sut/referential-action->str action))
-             (sut/column-constraint [:foreign-key "users" "id" nil action])))))
+             (sut/column-constraint [:foreign-key "users" "id" :on-update action])))))
   (testing "can create references constraint with on delete and on update"
     (doseq [delete-action sut/referential-action
             update-action sut/referential-action]
       (is (= (str "REFERENCES users(id) ON DELETE "
                   (sut/referential-action->str delete-action)
                   " ON UPDATE " (sut/referential-action->str update-action))
-             (sut/column-constraint [:foreign-key "users" "id" delete-action update-action]))))))
-
+             (sut/column-constraint [:foreign-key "users" "id" :on-delete delete-action :on-update update-action]))))))
 
 (deftest multi-constraints
   (testing "no constraints"

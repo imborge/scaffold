@@ -11,9 +11,9 @@
 (defn hugsql-var [column-spec]
   (clojure.core/update column-spec 0 #(str ":" %)))
 
-(defn hugsql-query-name [table-spec action {:keys [depluralize?]
-                                            :or   {depluralize? false}
-                                            :as   _opts}]
+(defn hugsql-query-name [model-name table-spec action {:keys [depluralize?]
+                                                       :or   {depluralize? false}
+                                                       :as   _opts}]
   (let [table-name        (:name table-spec)
         primary-key       (model/find-primary-key-columns table-spec)
         select-by-pk-name (if (model/column-spec? primary-key)
@@ -21,27 +21,33 @@
                             (str/join "-and-" (if (keyword? (first primary-key))
                                                 (drop 1 primary-key)
                                                 (drop 2 primary-key))))
-        query-ns          (if depluralize?
-                            (inflections/singular table-name)
-                            table-name)]
+        query-ns          (str model-name "."
+                               (if depluralize?
+                                 (inflections/singular table-name)
+                                 table-name))]
     (condp = action
       :insert       (str query-ns "/create!")
-      :select       (str query-ns "/get")
-      :select-by-pk (str query-ns "/get-by-" select-by-pk-name)
+      :select       (str query-ns "/list")
+      :select-by-pk (str query-ns "/get")
       :delete       (str query-ns "/delete!")
       :update       (str query-ns "/update!"))))
 
+(defn default-query-naming-strategy
+  [model-name table-spec action]
+  (keyword
+   (hugsql-query-name model-name table-spec action {:depluralize? true})))
+
 (defn hugsql-signature
-  ([table-spec action]
-   (hugsql-signature table-spec action {}))
-  ([table-spec action opts]
+  ([model-name table-spec action]
+   (hugsql-signature model-name table-spec action {}))
+  ([model-name table-spec action opts]
    {:pre [(s/valid? ::action action)]}
    (let [signature         (condp = action
-                             :insert       (str (hugsql-query-name table-spec :insert opts) " :! :n")
-                             :select       (str (hugsql-query-name table-spec :select opts) " :? :*")
-                             :select-by-pk (str (hugsql-query-name table-spec :select-by-pk opts) " :? :1")
-                             :delete       (str (hugsql-query-name table-spec :delete opts) " :! :n")
-                             :update       (str (hugsql-query-name table-spec :update opts) " :! :n"))]
+                             :insert       (str (hugsql-query-name model-name table-spec :insert opts) " :! :n")
+                             :select       (str (hugsql-query-name model-name table-spec :select opts) " :? :*")
+                             :select-by-pk (str (hugsql-query-name model-name table-spec :select-by-pk opts) " :? :1")
+                             :delete       (str (hugsql-query-name model-name table-spec :delete opts) " :! :n")
+                             :update       (str (hugsql-query-name model-name table-spec :update opts) " :! :n"))]
      (str "-- :name " signature "\n"))))
 
 (defn jdbc-val [column-spec]
@@ -87,6 +93,7 @@
       ((set (drop 1 table-pk)) column-name))
     (model/column-contains-primary-key? (model/find-column-by-name column-name (:columns table-spec)))))
 
+;; TODO: Remove columns with SERIAL and BIGSERIAL types
 (defn insert [{table-name :name
                columns :columns}
               prepare-column-value-fn]
@@ -95,6 +102,7 @@
          " (" (str/join ", " (map first columns)) ")\n"
          "VALUES (" (str/join ", " (map (comp first prepare-column-value-fn) columns)) ")")))
 
+;; TODO: Add OFFSET and LIMIT
 (defn select [{table-name :name
                columns    :columns
                :as        _table-spec}]
@@ -108,7 +116,7 @@
        " WHERE " (where-clause table-spec prepare-column-value-fn)))
 
 (defn update [{table-name :name
-               _columns    :columns
+               _columns   :columns
                :as        table-spec}
               prepare-column-value-fn]
   (str "UPDATE " table-name " SET"
@@ -122,3 +130,28 @@
                :as        table-spec}
               prepare-column-value-fn]
   (str "DELETE FROM " table-name " WHERE " (where-clause table-spec prepare-column-value-fn)))
+
+(defn generate-hugsql-queries
+  [config model]
+  (str/join "\n\n"
+            (for [table-spec (:tables model)]
+              (let [insert-sql
+                    (str (hugsql-signature (:name model) table-spec :insert {:depluralize? true})
+                         (insert table-spec (comp append-column-cast hugsql-var)))
+
+                    select-sql
+                    (str (hugsql-signature (:name model) table-spec :select {:depluralize? true})
+                         (select table-spec))
+
+                    select-by-pk-sql
+                    (str (hugsql-signature (:name model) table-spec :select-by-pk {:depluralize? true})
+                         (select-by-pk table-spec (comp append-column-cast hugsql-var)))
+
+                    update-sql
+                    (str (hugsql-signature (:name model) table-spec :update {:depluralize? true})
+                         (update table-spec (comp append-column-cast hugsql-var)))
+
+                    delete-sql
+                    (str (hugsql-signature (:name model) table-spec :delete {:depluralize? true})
+                         (delete table-spec (comp append-column-cast hugsql-var)))]
+                (str/join "\n\n" [insert-sql select-sql select-by-pk-sql update-sql delete-sql])))))

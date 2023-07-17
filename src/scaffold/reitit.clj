@@ -3,9 +3,7 @@
    [clojure.string :as str]
    [scaffold.model :as model]
    [scaffold.postgres.constraints :as c]
-   [scaffold.postgres.query :as q]
-   [scaffold.postgres.types :as t]
-   [scaffold.request-handlers :as handlers]))
+   [scaffold.postgres.types :as t]))
 
 (defn primary-key-path
   "Generates the reitit resource path for `detail` and `delete`.
@@ -52,16 +50,16 @@
    ["/"
     {:get (when (get-in handlers [:handlers :index])
             {:handler (symbol (name (:ns handlers)) "index")})
-     
+
      :post (when (get-in handlers [:handlers :create])
              {:parameters {:body (body-parameters table-spec)}
               :handler    (symbol (name (:ns handlers)) "create")})}]
-   
+
    [(primary-key-path table-spec)
     {:get (when (get-in handlers [:handlers :detail])
             {:parameters {:path (primary-key-parameters table-spec)}
              :handler    (symbol (name (:ns handlers)) "details")})
-     
+
      :delete (when (get-in handlers [:handlers :delete])
                {:parameters {:path (primary-key-parameters table-spec)}
                 :handler    (symbol (name (:ns handlers)) "delete")})}]])
@@ -77,7 +75,4 @@
     {:name    "users"
      :columns [["id" [:uuid]]
                ["username" [:text]]]
-     :constraints [[:primary-key "id" "username"]]})
-
-  
-  )
+     :constraints [[:primary-key "id" "username"]]}))

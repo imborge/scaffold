@@ -1,0 +1,4 @@
+{:name   "users2"
+ :tables [{:name    "users"
+           :columns [["id" [:uuid] [[:primary-key] [:default "uuid_generate_v4()"]]]
+                     ["email" [:citext] [[:unique]]]]}]}

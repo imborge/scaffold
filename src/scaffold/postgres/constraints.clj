@@ -27,13 +27,17 @@
 (def referential-action
   #{:restrict :cascade :noop :null :default})
 
+(s/def ::referential-rule
+  (s/cat
+   :rule #{:on-delete :on-update}
+   :action referential-action))
+
 (s/def ::referential-action referential-action)
 (s/def ::references
   (s/cat
    :table string?
    :column string?
-   :on-delete (s/? (s/nilable ::referential-action))
-   :on-update (s/? (s/nilable ::referential-action))))
+   :rules (s/* ::referential-rule)))
 
 (def referential-action->str
   {:restrict "RESTRICT"
@@ -42,13 +46,26 @@
    :null     "SET NULL"
    :default  "SET DEFAULT"})
 
-(defn references [[table column on-delete on-update :as params]]
+(defn rule-count [rules]
+  (frequencies (map :rule rules)))
+
+(defn validate-unique-rules [rules]
+  (let [rc (rule-count rules)]
+    (when (some #(<= 2 %) (vals rc))
+      (throw (ex-info (str "Validation error! Multiple rules provided for: " (keys (filter #(< 1 (val %)) rc))) {:rule-count rc})))
+    (every? #(<= % 1) (vals (rule-count rules)))))
+
+(defn references [[table column & {:keys [on-delete on-update]} :as params]]
   {:pre [(s/valid? ::references (vec params))]}
-  (str "REFERENCES " table "(" column ")"
-       (when on-delete
-         (str " ON DELETE " (referential-action->str on-delete)))
-       (when on-update
-         (str " ON UPDATE " (referential-action->str on-update)))))
+  (let [conformed (s/conform ::references (vec params))]
+    (if (and (not (s/invalid? conformed))
+             (validate-unique-rules (:rules conformed)))
+      (str "REFERENCES " table "(" column ")"
+           (when on-delete
+             (str " ON DELETE " (referential-action->str on-delete)))
+           (when on-update
+             (str " ON UPDATE " (referential-action->str on-update))))
+      (throw (ex-info "")))))
 
 (def column-constraint->generator
   {:not-null    (constantly "NOT NULL")
@@ -57,7 +74,8 @@
    :check       check
    :default     default
    :primary-key (constantly "PRIMARY KEY")
-   :foreign-key  references})
+   :foreign-key references
+   :references  references})
 
 (defn constraint
   ([constraint-vec constraint->generator-map]
